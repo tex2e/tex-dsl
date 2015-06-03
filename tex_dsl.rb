@@ -105,45 +105,6 @@ lstset <<'EOS'
 EOS
 
 
-title 'How to write TexDSL'
-author '@TeX2e'
-date Time.now.strftime('%Y/%m/%d')
-
-set :document do
-	section 'Overview'
-
-	set :screen do
-		set :verbatim do
-			puts 'write code here'
-		end
-	end
-
-	section 'Example'
-
-	set :itembox, caption: 'source code' do
-		set :verbatim do
-			puts File.open("sample.c", "r", &:read)
-		end
-	end
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 set :document do
 	maketitle ''
 	thispagestyle 'empty'
@@ -164,3 +125,14 @@ set :document do
 		end
 	end
 end
+
+
+
+
+
+
+
+
+
+
+
