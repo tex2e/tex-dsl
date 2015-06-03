@@ -37,10 +37,15 @@ module TexDSL
 	# 
 	# Make block command
 	# 
-	def block_command(cmd)
-		puts "\\begin{#{cmd}}"
+	def block_command(cmd, args={})
+		option = args[:option]
+		caption = args[:caption]
+		out = "\\begin{#{cmd}}"
+		out << "[#{option}]" if option
+		out << "{#{caption}}" if caption
+		Kernel.puts out
 		yield
-		puts "\\end{#{cmd}}"
+		Kernel.puts "\\end{#{cmd}}"
 	end
 
 	alias_method :start, :block_command
@@ -61,10 +66,8 @@ module TexDSL
 			end
 		end
 
-		puts out
+		Kernel.puts out
 	end
-
-
 end
 
 
@@ -86,41 +89,41 @@ usepackage 'txfonts'
 usepackage 'listings, jlisting'
 renewcommand '\lstlistingname', 'List'
 
-lstset <<-EOS
-	language=c,
-	basicstyle=\\ttfamily\\small, % font and size
-	commentstyle=\\textit, % font of comment
-	classoffset=1,
-	keywordstyle=\\bfseries,
-	frame=tRBl,
-	framesep=5pt,
-	showstringspaces=false,
-	numbers=left,
-	stepnumber=1,
-	numberstyle=\\footnotesize,
-	tabsize=3 % depth of indent
+lstset <<'EOS'
+	language = c,
+	basicstyle = \ttfamily\small,
+	commentstyle = \textit,
+	classoffset = 1,
+	keywordstyle = \bfseries,
+	frame = tRBl,
+	framesep = 5pt,
+	showstringspaces = false,
+	numbers = left,
+	stepnumber = 1,
+	numberstyle = \footnotesize,
+	tabsize = 2
 EOS
 
-title 'How to write tex-DSL'
+
+title 'How to write TexDSL'
 author '@TeX2e'
 date Time.now.strftime('%Y/%m/%d')
 
 set :document do
-	maketitle ''
-	thispagestyle 'empty'
-	newpage ''
-	setcounter val: 'page', subval: '1'
-
 	section 'Overview'
 
 	set :screen do
 		set :verbatim do
-			puts '$ gem install kramdown'
+			puts 'write code here'
 		end
 	end
 
-	set :center do
-		
+	section 'Example'
+
+	set :itembox, caption: 'source code' do
+		set :verbatim do
+			puts File.open("sample.c", "r", &:read)
+		end
 	end
 end
 
@@ -130,3 +133,34 @@ end
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+set :document do
+	maketitle ''
+	thispagestyle 'empty'
+	newpage ''
+	setcounter 'page', '1'
+
+	section 'Overview'
+
+	set :screen do
+		set :verbatim do
+			puts 'write code here'
+		end
+	end
+
+	set :itembox, caption: 'source code' do
+		set :verbatim do
+			puts File.open("sample.c", "r", &:read)
+		end
+	end
+end
