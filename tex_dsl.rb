@@ -12,7 +12,7 @@ module TexDSL
 	alias_method :original_method_missing, :method_missing
 
 	def method_missing(method, *args, &block)
-		if args.length.between?(1, 5)
+		if args.all? { |e| e.kind_of?(String) or e.kind_of?(Array) }
 			make_command(method, args)
 		else
 			original_method_missing(method, *args, &block)
@@ -58,7 +58,8 @@ module TexDSL
 	def make_command(func_name, args)
 		args = [args] unless args.respond_to?(:inject)
 
-		out = args.inject("\\#{func_name}") do |memo, arg|
+		init = "\\#{func_name}"
+		out = args.inject(init.dup) do |memo, arg|
 			if arg.kind_of?(Array)
 				memo << "[#{arg.join(',')}]"
 			elsif arg.kind_of?(String)
@@ -66,65 +67,106 @@ module TexDSL
 			end
 		end
 
+		return if out == init
+
 		Kernel.puts out
 	end
+
+	# 
+	# Make table
+	# 
+	def table(args={}, &block)
+		caption = args[:caption] || ''
+		label = args[:label] || ''
+		array = yield []
+		hline = '\hline'
+
+		# make table struct
+		# if row is numeric, put 'r'. otherwise, 'l'
+		# eg. '|l|r|r|'
+		table_struct = 
+			array[1].inject('|') do |memo, col|
+				memo << (col.numeric? ? 'r|' : 'l|')
+			end
+
+		# insert \hline to [0], [2], [last]
+		array.insert(0, [hline]).insert(2, [hline]).push([hline])
+
+		table_str = 
+			array.inject('') do |memo, row|
+				next memo << hline << "\n" if row.first == hline
+				next memo << row.join(' & ') << "\\\\\n"
+			end
+
+		puts <<-EOT
+			\\begin{table}[h]
+			\\centering
+			\\caption{#{caption}}
+			\\label{#{label}}
+			\\begin{tabular}{#{table_struct}}
+		EOT
+		puts table_str
+		puts <<-EOT
+			\\end{tabular}
+			\\end{table}
+		EOT
+	end
+
+	String.class_exec do
+		def numeric?
+			Float(self) != nil rescue false
+		end
+	end
+
+	Numeric.class_exec do
+		def numeric?
+			true
+		end
+	end
+
+	# 
+	# Put figure
+	# 
+	def figure(args={})
+		option = args[:option] || 'h'
+		scale = args[:scale] || '1.0'
+		caption = args[:caption] || ''
+		path = args[:path] || raise(ArgumentError, 'no figure path')
+
+		puts <<-EOF
+			\\begin{figure}[#{option}]
+			\\centering
+			\\includegraphics[scale=#{scale}]{#{path}}
+			\\caption{#{caption}}
+			\\label{img1}
+			\\end{figure}
+		EOF
+	end
+end
+
+
+
+if __FILE__ == $PROGRAM_NAME
+	include(TexDSL)
+
+	documentclass %w(a4j titlepage), 'jarticle'
+	usepackage ['utf8'], 'inputenc'
+	usepackage 'fancybox, ascmac'
+
+	set :document do
+		section 'Overview'
+
+		puts <<-'EOS'
+			This is sample text
+			This is sample text
+			This is sample text
+		EOS
+	end
 end
 
 
 
 
-include(TexDSL)
-
-documentclass %w(a4j titlepage), 'jarticle'
-usepackage ['utf8'], 'inputenc'
-usepackage 'fancybox, ascmac'
-usepackage 'amsmath, amssymb'
-usepackage 'fancybox, ascmac'
-usepackage ['dvipdfmx'], 'graphicx'
-usepackage 'verbatim'
-# to display code list
-usepackage 'ascmac'
-usepackage 'here'
-usepackage 'txfonts'
-usepackage 'listings, jlisting'
-renewcommand '\lstlistingname', 'List'
-
-lstset <<'EOS'
-	language = c,
-	basicstyle = \ttfamily\small,
-	commentstyle = \textit,
-	classoffset = 1,
-	keywordstyle = \bfseries,
-	frame = tRBl,
-	framesep = 5pt,
-	showstringspaces = false,
-	numbers = left,
-	stepnumber = 1,
-	numberstyle = \footnotesize,
-	tabsize = 2
-EOS
-
-
-set :document do
-	maketitle ''
-	thispagestyle 'empty'
-	newpage ''
-	setcounter 'page', '1'
-
-	section 'Overview'
-
-	set :screen do
-		set :verbatim do
-			puts 'write code here'
-		end
-	end
-
-	set :itembox, caption: 'source code' do
-		set :verbatim do
-			puts File.open("sample.c", "r", &:read)
-		end
-	end
-end
 
 
 
@@ -136,3 +178,69 @@ end
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+__END__
+
+# TODO: create lstinputlisting()
+# TODO: create verbatiminput()
+# TODO: code_block() call lstinputlisting() or verbatiminput()
+
+\subsection{説明}
+
+プログラムの手順を以下に示す。
+
+\begin{enumerate}
+\item {\tt argc}の値を出力する
+\item {\tt argv}の要素を、for文で {\tt argv[i]} として出力する
+\item {\tt argv}の要素を、2重for文を用いて {\tt argv[i][j]} として出力する
+\item {\tt argv}の要素を、2重for文を用いて {\tt *(argv[i] + j)} として出力する
+\end{enumerate}
+
+\subsection{プログラムリスト}
+
+\lstinputlisting[caption=argcとargvの中身を表示するプログラム ,label=pg:3a]
+{path/to/file.c}
+
+\subsection{実行結果}
+
+\begin{itembox}[c]{課題3a. 出力結果}
+{\small
+\verbatiminput{path/to/file.out}
+}
+\end{itembox}
+
+\subsection{考察}
+
+{\tt argc}, {\tt argv} それぞれの特徴を以下にまとめる。
+
+\begin{description}
+\item[{\tt argc}]\mbox{}\\ main関数の引数である{\tt argc}は、...
+
+\item[{\tt argv}]\mbox{}\\ main関数の引数である{\tt argv}は、...
+\end{description}
