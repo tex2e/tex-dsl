@@ -5,7 +5,7 @@ module TexDSL
 	end
 
 	# constance
-	NewLine = '\\\\'
+	NewLine = '~\\\\'
 
 	# 
 	# Modify method_missing
@@ -13,9 +13,10 @@ module TexDSL
 	alias_method :original_method_missing, :method_missing
 
 	def method_missing(method, *args, &block)
-		tex_command = 
+		tex_command = (
 			!args.empty? && args.all? { |e| e.kind_of?(String) or e.kind_of?(Array) } ||
 			args.empty? && block_given?
+		)
 
 		if tex_command
 			# print "make_command #{method} >> "
@@ -34,7 +35,7 @@ module TexDSL
 		# define ghost method
 		if block_given? && mkcmd_args.empty?
 			# func{} -> \func{}
-			# this braces is Proc, therefore use 'block_given?' method.
+			# this braces is Proc, therefore use 'block_given?' to check given braces.
 			define_method(func_name) do
 				Kernel.puts "\\#{func_name}{}"
 			end
@@ -66,11 +67,12 @@ module TexDSL
 	end
 	
 	# 
-	# Delete indent on here-document
+	# Re-define puts
 	# 
+	# delete front spaces, indent and last spaces
 	def puts(*strs)
 		strs.each do |str|
-			Kernel.puts str.to_s.unindent
+			Kernel.puts str.to_s.rstrip.unindent.lstrip
 		end
 	end
 
@@ -81,14 +83,25 @@ module TexDSL
 	end
 
 	# 
-	# Make string ( \tiny - \Huge )
+	# Make size command ( \tiny - \Huge )
 	# 
 	# Large('insert text') -> '{ \Large insert text }'
-	%w(tiny scriptsize footnotesize small normalsize large Large LARGE huge Huge)
+	%w(
+		tiny scriptsize footnotesize small normalsize large Large LARGE huge Huge
+		rm sf tt md bf
+	)
 	.map(&:to_sym).each do |cmd|
 		define_method(cmd) do |insert_text|
+			insert_text = insert_text.rstrip.unindent.lstrip
 			return "{ \\#{cmd} #{insert_text} }"
 		end
+	end
+
+	# 
+	# Make ref command
+	# 
+	def ref(refrence)
+		"\\ref{#{refrence}}"
 	end
 
 	# 
@@ -96,7 +109,7 @@ module TexDSL
 	# 
 	def block_command(cmd, args={})
 		option = args[:option]
-		value  = args[:value]
+		value  = args[:caption] || args[:value]
 		out = "\\begin{#{cmd}}"
 		out << "[#{option}]" if option
 		out << "{#{value}}" if value
@@ -115,7 +128,6 @@ module TexDSL
 		caption = args[:caption] || ''
 		label = args[:label] || ''
 		array = yield []
-		hline = '\hline'
 
 		# make table struct
 		# if row is numeric, put 'r'. otherwise, 'l'
@@ -124,6 +136,8 @@ module TexDSL
 			array[1].inject('|') do |memo, col|
 				memo << (col.numeric? ? 'r|' : 'l|')
 			end
+
+		hline = '\hline'
 
 		# insert \hline to [0], [2], [last]
 		array.insert(0, [hline]).insert(2, [hline]).push([hline])
@@ -182,107 +196,28 @@ end
 if __FILE__ == $PROGRAM_NAME
 	include(TexDSL)
 
-	# documentclass %w(a4j titlepage), 'jarticle'
-	# usepackage ['utf8'], 'inputenc'
-	# usepackage 'fancybox, ascmac'
+	documentclass %w(a4j titlepage), 'jarticle'
+	usepackage ['utf8'], 'inputenc'
+	usepackage 'fancybox, ascmac'
 
-	# set :document do
-	# 	section 'Overview'
+	set :document do
+		section 'Overview'
 
-	# 	puts <<-'EOS'
-	# 		This is sample text
-	# 		This is sample text
-	# 		This is sample text
-	# 	EOS
-	# end
+		puts "
+			This is sample text
+			This is sample text
+			This is sample text
+		"
 
-	table caption: 'Table test' do
-		[
-			%w(title tag  description totalcost),
-			%w(hoge  fuga piyo 100),
-			%w(foo   bar  baz  200),
-			%w(spam  eggs ham  300),
-		]
+		table caption: 'Table sample' do
+			[
+				%w(title  tag   description  cost),
+				%w(hoge   fuga  piyo         100),
+				%w(foo 	  bar   baz          200),
+				%w(spam   eggs  ham          300),
+			]
+		end
 	end
 end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-__END__
-
-# TODO: create lstinputlisting()
-# TODO: create verbatiminput()
-# TODO: code_block() call lstinputlisting() or verbatiminput()
-
-\subsection{説明}
-
-プログラムの手順を以下に示す。
-
-\begin{enumerate}
-\item {\tt argc}の値を出力する
-\item {\tt argv}の要素を、for文で {\tt argv[i]} として出力する
-\item {\tt argv}の要素を、2重for文を用いて {\tt argv[i][j]} として出力する
-\item {\tt argv}の要素を、2重for文を用いて {\tt *(argv[i] + j)} として出力する
-\end{enumerate}
-
-\subsection{プログラムリスト}
-
-\lstinputlisting[caption=argcとargvの中身を表示するプログラム ,label=pg:3a]
-{path/to/file.c}
-
-\subsection{実行結果}
-
-\begin{itembox}[c]{課題3a. 出力結果}
-{\small
-\verbatiminput{path/to/file.out}
-}
-\end{itembox}
-
-\subsection{考察}
-
-{\tt argc}, {\tt argv} それぞれの特徴を以下にまとめる。
-
-\begin{description}
-\item[{\tt argc}]\mbox{}\\ main関数の引数である{\tt argc}は、...
-
-\item[{\tt argv}]\mbox{}\\ main関数の引数である{\tt argv}は、...
-\end{description}
