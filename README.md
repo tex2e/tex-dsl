@@ -101,4 +101,3 @@ figure caption: 'fig name', path: 'path/to/figure', label: 'fig:test1'
 - String#unindent
 - String#numeric?
 - Numeric#numeric?
-- 
