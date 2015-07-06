@@ -1,16 +1,16 @@
 
 task :default => :pdf
 
-source_files = Rake::FileList['**/report*.rb']
+source_files = Rake::FileList['report*.rb']
 
 desc "Make tex file from DSL"
 task :tex => source_files.ext('.tex')
 
 desc "Make dvi file from tex file"
-task :dvi => [*source_files.ext('.dvi'), :tex]
+task :dvi => source_files.ext('.dvi')
 
 desc "Make pdf file from dvi file"
-task :pdf => [*source_files.ext('.pdf'), :dvi]
+task :pdf => source_files.ext('.pdf')
 
 rule '.tex' => '.rb' do |t|
 	sh "ruby #{t.source} > #{t.name}"
@@ -22,7 +22,7 @@ rule '.dvi' => '.tex' do |t|
 	result = `#{command}`
 	puts command, result
 
-	# remake tex file, if necessary.
+	# remake dvi file, if necessary.
 	while result.match(/Rerun to get cross-references right\./)
 		result = `#{command}`
 		puts result
