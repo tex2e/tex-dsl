@@ -29,6 +29,8 @@ puts "
 # sample sentence
 ~~~
 
+#### TeX buildin commands
+
 TexDSL will convert the ghost method into real method.
 
 ~~~ruby
@@ -43,28 +45,60 @@ documentclass ['a4', 'titlepage'], 'article'
 # => output: \documentclass[a4,titlepage]{article}
 ~~~
 
-`set` function will make 'begin' and 'end'.
+#### Block commands
+
+`set` function will puts 'begin' and 'end'.
 
 ~~~ruby
 set :document do
   puts 'foo'
-end
-# => output:
-# \begin{document}
-# foo
-# \end{document}
 
-set :itemize do
-  item 'spam'
-  item 'ham'
-  item 'eggs'
+  set :itemize do
+    item 'spam'
+    item 'ham'
+    item 'eggs'
+  end
 end
-# => output:
-# \begin{itemize}
-# \item{spam}
-# \item{ham}
-# \item{eggs}
-# \end{itemize}
+~~~
+
+output will be:
+
+~~~
+\begin{document}
+foo
+\begin{itemize}
+\item{spam}
+\item{ham}
+\item{eggs}
+\end{itemize}
+\end{document}
+~~~
+#### Tables
+
+`table` function will create table.
+
+~~~ruby
+table caption: 'sample table' do
+	[
+		%w(name    description   cost),
+		%w(foo     spam          100),
+		%w(bar 	   ham           200),
+		%w(baz     egg           300),
+	]
+end
+~~~
+#### Figures
+
+`figure` function will put figure.
+
+~~~ruby
+figure caption: 'fig name', path: 'path/to/figure', label: 'fig:test1'
 ~~~
 
 
+# Add or Redefine methods
+
+- String#unindent
+- String#numeric?
+- Numeric#numeric?
+- 
